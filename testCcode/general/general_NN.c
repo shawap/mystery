@@ -94,6 +94,7 @@ void test_nn(_nn *nn)
         nn->temp[t & 1][i] = temp;
         if(i != 0 && i % iptdim == 0) // every single test;
         {
+            i = 0;
             for(m = 0; m < nn->numlay - 1; m++)
             {
                 t++;
