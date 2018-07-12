@@ -1,1 +1,4 @@
 ckpt/
+
+*.txt
+*.onnx

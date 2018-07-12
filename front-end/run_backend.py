@@ -2,7 +2,7 @@ import onnx
 import numpy as np
 from onnx_tf.backend import prepare
 
-model = onnx.load('mnist16x16x16.onnx')
+model = onnx.load('mnist.onnx')
 tf_rep = prepare(model)
 
 img = np.load("./assets/image.npz")
