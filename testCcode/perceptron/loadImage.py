@@ -6,7 +6,7 @@ x_train = mnist.train.images
 x_label = mnist.train.labels
 
 # 印出來看看
-chooseImage = 1032
+chooseImage = 9487
 first_train_img = np.reshape(x_train[chooseImage, :], (28, 28))
 label = -1
 for i in range(0, 10):

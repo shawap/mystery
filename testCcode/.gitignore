@@ -3,4 +3,7 @@ MNIST_data/
 test_images.txt
 test_label_list.txt
 
-a.exe
+*/*.exe
+./*/*.out
+*.out
+*.exe
