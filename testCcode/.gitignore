@@ -3,7 +3,10 @@ MNIST_data/
 test_images.txt
 test_label_list.txt
 
+
 */*.exe
 ./*/*.out
 *.out
 *.exe
+
+api/output
