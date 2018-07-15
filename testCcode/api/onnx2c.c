@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define NUM_LAYER 5
 
 const int LAYER_DIM[NUM_LAYER] = {784, 16, 16, 16, 10};
 
@@ -12,14 +13,14 @@ __attribute__((always_inline)) inline double RELU(const double x){ return x > 0 
 int RunModel(double *input, double *output)
 {
     int err = 0;
-    _nn nn;
-    init_nn(&nn);
+    _NN_ nn;
+    Init_NN(&nn);
     
-    err = test_nn(&nn, input, output);
+    err = Test_NN(&nn, input, output);
     if(err) goto error;
 
 
-    free_nn(&nn);
+    Free_NN(&nn);
 
     return 0;
 
@@ -28,7 +29,7 @@ error:
     return err;
 }
 
-int init_nn(_nn *nn)
+int Init_NN(_NN_ *nn)
 {
     printf("start Input1\n");
     scanf("%d", &(nn->numlay));
@@ -81,20 +82,20 @@ int init_nn(_nn *nn)
     return err;
 }
 
-int GetNNInputSize(_nn* nn)
+int GetNNInputSize(_NN_* nn)
 {
     assert(nn != NULL);
     return nn->laydim[0];
 }
 
-int GetNNOutputSize(_nn* nn)
+int GetNNOutputSize(_NN_* nn)
 {
     assert(nn != NULL);
     return nn->laydim[nn->numlay - 1];
 }
 
 
-int test_nn(_nn *nn, double *input, double *output)
+int Test_NN(_NN_ *nn, double *input, double *output)
 {
     //FILE *fp = (FILE *) fopen(testFile, "r");
    // assert(fp != NULL);
@@ -154,7 +155,7 @@ int test_nn(_nn *nn, double *input, double *output)
 
 
 
-void free_nn(_nn *nn)
+void Free_NN(_NN_ *nn)
 {
     int i;
     int numgap = nn->numlay - 1;

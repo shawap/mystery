@@ -4,10 +4,9 @@
 
 
 #define MAX_LAYER   16
-#define NUM_LAYER   5
 
 
-typedef struct _nn
+typedef struct _NN_
 {
     int numlay;
     int maxdim;
@@ -19,7 +18,7 @@ typedef struct _nn
      * future add,
      * func ptr to act func
     */
-}   _nn;
+}   _NN_;
 
 /**
  * input & outputshould be 1 dimension
@@ -29,15 +28,15 @@ typedef struct _nn
 int RunModel(double *input, double *output);
 
 
-int init_nn(_nn *nn);
+int Init_NN(_NN_ *nn);
 
-int GetNNInputSize(_nn* nn);
+int GetNNInputSize(_NN_* nn);
 
-int GetNNOutputSize(_nn* nn);
+int GetNNOutputSize(_NN_* nn);
 
-int test_nn(_nn *nn, double *input, double *output);
+int Test_NN(_NN_ *nn, double *input, double *output);
 
-void free_nn(_nn *nn);
+void Free_NN(_NN_ *nn);
 
 
 
