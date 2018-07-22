@@ -1,6 +1,7 @@
 MNIST_data/
 
 test_images.txt
+test_images-withcomma.txt
 test_label_list.txt
 
 

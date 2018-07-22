@@ -7,38 +7,37 @@
 #define NUMBER_OF_GAP  {} 
 
 
+const double coef[] = {};
 
-typedef struct _nn
-lbrace
-    int numlay;
-    int maxdim;
-    int laydim[NUMBER_OF_LAYER];
-    double *wei[NUMBER_OF_GAP];
-    double *bia[NUMBER_OF_GAP];
-    double *temp[2];
-    // Future work, function pointers to activation functions
-rbrace   _nn;
-
-void init_nn(_nn *nn);
-void test_nn(_nn *nn);
-void free_nn(_nn *nn);
 __attribute__((always_inline)) inline double RELU(const double x) lbrace return x > 0 ? x : 0; rbrace
 
-int main()
+int RunModel(double *input, double *output)
 lbrace
-    _nn nn;
-    init_nn(&nn);
-    test_nn(&nn);
-    free_nn(&nn);
+    int err = 0;
+    _NN_ nn;
+    Init_NN(&nn);
+    
+    err = Test_NN(&nn, input, output);
+    if(err) goto error;
+
+
+    Free_NN(&nn);
+
     return 0;
+
+error:
+    printf("Get something wrong...\n");
+    return err;
 rbrace
 
 
-void init_nn(_nn *nn)
+
+int Init_NN(_NN_ *nn)
 lbrace
     // dimension infos
     nn->numlay = NUMBER_OF_LAYER;
     nn->maxdim = {};
+    int err = 0;
     memcpy(nn->laydim, {}, sizeof(int) * NUMBER_OF_LAYER);
     
  
@@ -49,7 +48,6 @@ lbrace
 
     // construct nns
     int i, j, ofst = 0;
-    double coef[] = {};
     for(i = 0; i < NUMBER_OF_GAP; i++)
     lbrace
         int wdim = nn->laydim[i] * nn->laydim[i + 1];
@@ -61,12 +59,29 @@ lbrace
         memcpy(nn->bia[i], &coef[ofst], sizeof(double) * bdim);
         ofst += bdim;
     rbrace
+
+    return err;
 rbrace
 
-void test_nn(_nn *nn)
+
+int GetNNInputSize(_NN_* nn)
 lbrace
-    FILE *fp = (FILE *) fopen("td1.txt", "r");
-    assert(fp != NULL);
+    assert(nn != NULL);
+    return nn->laydim[0];
+rbrace
+
+int GetNNOutputSize(_NN_* nn)
+lbrace
+    assert(nn != NULL);
+    return nn->laydim[nn->numlay - 1];
+rbrace
+
+
+
+int Test_NN(_NN_ *nn, double *input, double *output)
+lbrace
+    //FILE *fp = (FILE *) fopen("td1.txt", "r");
+    //assert(fp != NULL);
     int i;
     int t;
     int m;
@@ -74,16 +89,17 @@ lbrace
     int k;
     int iptdim;
     int optdim;
+    int err = 0;
     double temp;
     iptdim = nn->laydim[0];
 
-    for(i = 0, t = 0; !feof(fp); i++)
+    for(i = 0, t = 0; i < iptdim ; i++)
     lbrace
-        fscanf(fp, "%lf", &temp);
-        nn->temp[t & 1][i] = temp;
-        if(i != 0 && i % iptdim == 0) // every single test;
+        //fscanf(fp, "%lf", &temp);
+        nn->temp[t & 1][i] = input[i];
+        if((i + 1) % iptdim == 0)  // every single test;
         lbrace
-            i = 0;
+            //i = 0;
             for(m = 0; m < nn->numlay - 1; m++)
             lbrace
                 t++;
@@ -111,12 +127,14 @@ lbrace
             rbrace
         rbrace
     rbrace
-    fclose(fp);
+    //fclose(fp);
+
+    return err;
 rbrace
 
 
 
-void free_nn(_nn *nn)
+void Free_NN(_NN_ *nn)
 lbrace
     int i;
     int numgap = nn->numlay - 1;
@@ -127,4 +145,5 @@ lbrace
     rbrace
     free(nn->temp[0]);
     free(nn->temp[1]);
+
 rbrace

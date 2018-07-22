@@ -2,7 +2,7 @@ import onnx
 import numpy as np
 
 fdir = '../testExtract/input/'
-onnxfile = 'mnist16x16x16.onnx'
+onnxfile = 'mnist64x64x64.onnx'
 fpath = fdir + onnxfile
 model = onnx.load(fpath)
 
@@ -46,6 +46,6 @@ outputs = ''
 for cline in ccode:
     outputs += cline
 
-outputs = outputs.format(numOfLayer, numOfGap, maxLayer, '(int [])' + dimOfLayer, coef).replace('lbrace', '{').replace('rbrace', '}')
-with open('result.c', 'w') as fp:
+outputs = outputs.format(numOfLayer, numOfGap, coef, maxLayer, '(int [])' + dimOfLayer).replace('lbrace', '{').replace('rbrace', '}')
+with open('ver0-' + onnxfile.split('.')[0] + '.c', 'w') as fp:
     fp.write(outputs)
