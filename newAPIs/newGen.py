@@ -2,7 +2,7 @@ import onnx
 import numpy as np
 
 fdir = '../testExtract/input/'
-onnxfile = 'mnist64x64x64.onnx'
+onnxfile = 'mnist256x256x256.onnx'
 fpath = fdir + onnxfile
 model = onnx.load(fpath)
 
@@ -34,8 +34,37 @@ dimOfLayer = str(layerdim).replace('[', '{').replace(']', '}')
 
 coef = []
 
-for i in inits:
+##sheep add
+const_vars = '\n'
+assgin_data = '\n'
+##End sheep add
+
+for idx, i in enumerate(inits):
+
+    ##sheeep add
+    n_lay = int(idx / 2)
+
+    name = str(i.name)
+    const_vars += 'const double coef_' + name.split('/')[0] + name.split('/')[1] + '[] = '
+    const_vars += str(list(i.double_data)).replace('[','{ ').replace(']',' }') + ';\n'
+
+    if name.find('weights') >= 0:
+        print(name)
+        assgin_data += '\tnn->wei[{}] = coef_{};\n'.format(n_lay, name.split('/')[0] + name.split('/')[1])
+    elif name.find('bias') >= 0:
+        assgin_data += '\tnn->bia[{}] = coef_{};\n'.format(n_lay, name.split('/')[0] + name.split('/')[1])
+
+    
+    #END sheep add
+   
+   
     coef += (list(i.double_data))
+
+##
+const_vars += '\n'
+assgin_data += '\n'
+##
+
 
 coef = str(coef).replace('[','{ ').replace(']',' }')
 
@@ -46,6 +75,7 @@ outputs = ''
 for cline in ccode:
     outputs += cline
 
-outputs = outputs.format(numOfLayer, numOfGap, coef, maxLayer, '(int [])' + dimOfLayer).replace('lbrace', '{').replace('rbrace', '}')
-with open('ver0-' + onnxfile.split('.')[0] + '.c', 'w') as fp:
+# set max Layer to 784 for M4
+outputs = outputs.format(numOfLayer, numOfGap, const_vars, 784, '(int [])' + dimOfLayer, assgin_data).replace('lbrace', '{').replace('rbrace', '}')
+with open('ver0.0.1-' + onnxfile.split('.')[0] + '.c', 'w') as fp:
     fp.write(outputs)

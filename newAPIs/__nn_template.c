@@ -6,8 +6,9 @@
 #define NUMBER_OF_LAYER {} 
 #define NUMBER_OF_GAP  {} 
 
-
-const double coef[] = {};
+#define IJK_ver     0
+//hard code const weigths and bias
+{}
 
 __attribute__((always_inline)) inline double RELU(const double x) lbrace return x > 0 ? x : 0; rbrace
 
@@ -47,6 +48,7 @@ lbrace
 
 
     // construct nns
+    /*
     int i, j, ofst = 0;
     for(i = 0; i < NUMBER_OF_GAP; i++)
     lbrace
@@ -58,7 +60,12 @@ lbrace
         ofst += wdim;
         memcpy(nn->bia[i], &coef[ofst], sizeof(double) * bdim);
         ofst += bdim;
+       
     rbrace
+    */
+
+    //use python hard code the wieghts and bias
+    {}
 
     return err;
 rbrace
@@ -107,10 +114,17 @@ lbrace
                 // set bias here
                 memcpy(nn->temp[t & 1], nn->bia[m], sizeof(double) * nn->laydim[m + 1]); // should be m+1
                 // weighting
+#if IJK_ver
+                for(k = 0; k < nn->laydim[m + 1]; k++)
+                lbrace
+                    for(n = 0; n < nn->laydim[m]; n++)
+                    lbrace
+#else
                 for(n = 0; n < nn->laydim[m]; n++)
                 lbrace
                     for(k = 0; k < nn->laydim[m + 1]; k++)
                     lbrace
+#endif
                         nn->temp[t & 1][k] += nn->temp[!(t & 1)][n] * nn->wei[m][n * nn->laydim[m+1] + k];
                     rbrace
                 rbrace
@@ -123,7 +137,8 @@ lbrace
             optdim = nn->laydim[nn->numlay - 1];
             for(k = 0; k < optdim; k++)
             lbrace
-                printf("[%d]:\t%lf\n", k, nn->temp[t & 1][k]);
+                printf("[%d]:\t%lf\r\n", k, nn->temp[t & 1][k]);
+                output[k] = nn->temp[t & 1][k];
             rbrace
         rbrace
     rbrace
@@ -138,11 +153,13 @@ void Free_NN(_NN_ *nn)
 lbrace
     int i;
     int numgap = nn->numlay - 1;
+    /*
     for(i = 0; i < numgap; i++)
     lbrace
         free(nn->wei[i]);
         free(nn->bia[i]);
     rbrace
+    */
     free(nn->temp[0]);
     free(nn->temp[1]);
 
