@@ -3,8 +3,8 @@
 #include <string.h>
 #include <assert.h>
 
-#define NUMBER_OF_LAYER {} 
-#define NUMBER_OF_GAP  {} 
+#define NUMBER_OF_LAYER {}
+#define NUMBER_OF_GAP  {}
 
 #define IJK_ver     0
 //hard code const weigths and bias
@@ -17,7 +17,7 @@ lbrace
     int err = 0;
     _NN_ nn;
     Init_NN(&nn);
-    
+
     err = Test_NN(&nn, input, output);
     if(err) goto error;
 
@@ -40,8 +40,8 @@ lbrace
     nn->maxdim = {};
     int err = 0;
     memcpy(nn->laydim, {}, sizeof(int) * NUMBER_OF_LAYER);
-    
- 
+
+
     // extra space for storing results
     nn->temp[0] = (double *) malloc(sizeof(double) * nn->maxdim); assert(nn->temp[0] != NULL);
     nn->temp[1] = (double *) malloc(sizeof(double) * nn->maxdim); assert(nn->temp[1] != NULL);
@@ -60,7 +60,7 @@ lbrace
         ofst += wdim;
         memcpy(nn->bia[i], &coef[ofst], sizeof(double) * bdim);
         ofst += bdim;
-       
+
     rbrace
     */
 
@@ -106,7 +106,7 @@ lbrace
         nn->temp[t & 1][i] = input[i];
         if((i + 1) % iptdim == 0)  // every single test;
         lbrace
-            //i = 0;
+            // i = -1;
             for(m = 0; m < nn->numlay - 1; m++)
             lbrace
                 t++;

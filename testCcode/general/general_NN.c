@@ -45,7 +45,7 @@ void init_nn(_nn *nn)
     nn->maxdim = -1;
     // dimension infos
     for(i = 0; i < nn->numlay; i++)
-    {    
+    {
         scanf("%d", &(nn->laydim[i]));
         nn->maxdim = nn->maxdim > nn->laydim[i] ? nn->maxdim : nn->laydim[i];
     }
@@ -92,9 +92,9 @@ void test_nn(_nn *nn)
     {
         fscanf(fp, "%lf", &temp);
         nn->temp[t & 1][i] = temp;
-        if(i != 0 && i % iptdim == 0) // every single test;
+        if((i + 1) % iptdim == 0) // every single test;
         {
-            i = 0;
+            i = -1;
             for(m = 0; m < nn->numlay - 1; m++)
             {
                 t++;
