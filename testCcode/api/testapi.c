@@ -19,6 +19,7 @@ int main()
 
     FILE *fp = (FILE *) fopen("../general/td1.txt", "r");
     assert(fp != NULL);
+    Norm_NN(&nn);
 
     while(!feof(fp))
     {
@@ -26,6 +27,7 @@ int main()
             fscanf(fp, "%lf", &input[i]);
 
         Test_NN(&nn, input, output);
+        
         for(i = 0 ; i < output_size ; i++)
             printf("[%d]:\t%lf\n", i, output[i]);
     }

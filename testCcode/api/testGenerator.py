@@ -2,7 +2,7 @@ import onnx
 import numpy as np
 
 fdir = '../../testExtract/input/'
-onnxfile = 'mnist128x128x128.onnx'
+onnxfile = 'mnist-perceptron.onnx'
 fpath = fdir + onnxfile
 model = onnx.load(fpath)
 #print(model)

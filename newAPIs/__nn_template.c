@@ -1,12 +1,26 @@
+#include "onnx2c.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <math.h>
 
 #define NUMBER_OF_LAYER {}
 #define NUMBER_OF_GAP  {}
 
-#define IJK_ver     0
+/* Configuration */
+#define LOOP_EXCHANGE    0
+#define FIXPOINT         0
+#define FACTORS_FILE     "./factors"
+
+
+#if FIXPOINT
+const int MAX_DECIMAL_BIT =    0;
+int MAX_FLOAT_BIT   =   31;         
+double fix(double x);  
+#endif
+
+
 //hard code const weigths and bias
 {}
 
@@ -38,6 +52,7 @@ lbrace
     // dimension infos
     nn->numlay = NUMBER_OF_LAYER;
     nn->maxdim = {};
+    nn->factor = NULL;
     int err = 0;
     memcpy(nn->laydim, {}, sizeof(int) * NUMBER_OF_LAYER);
 
@@ -85,6 +100,99 @@ rbrace
 
 
 
+int Norm_NN(_NN_ *nn)
+lbrace
+    int numOfLay = nn->numlay; // Note that it includes the input layer now
+    int numOfGap = numOfLay - 1;
+    int err = 0;
+
+    // memory allocation for normalization factors
+    nn->factor = (_norm *) malloc(sizeof(_norm) * numOfGap);
+    assert(nn->factor != NULL);
+
+    int idxi, idxj, idxm, idxn, idxk;
+    int bdim, wdim, numOfNeuron;
+
+    // get the nw, na, na2
+    FILE * fptr = (FILE *) fopen(FACTORS_FILE, "r");
+    assert(fptr != NULL);
+
+    for(idxi = 0 ; idxi < numOfGap ; idxi++)
+    lbrace
+        fscanf(fptr, "%lf", &nn->factor[idxi].nw);
+        fscanf(fptr, "%lf", &nn->factor[idxi].na);
+        fscanf(fptr, "%lf", &nn->factor[idxi].na2);
+        //printf("[%d] nw is %lf, na is %lf, na2 is %lf\n", idxi, nn->factor[idxi].nw, nn->factor[idxi].na, nn->factor[idxi].na2);
+    rbrace
+    fscanf(fptr, "%lf", &nn->compensate);
+
+    //printf("%lf\n", nn->compensate);
+
+    // normalize the weight and bias
+    for(idxi = 0; idxi < numOfGap; idxi++)
+    lbrace
+        // get dimension infos at first
+        bdim = nn->laydim[idxi + 1];
+        wdim = nn->laydim[idxi] * nn->laydim[idxi + 1];
+
+        // (1) normalize bias at the first palce (by previous layers' nas & na2s)
+        // (1-1) from i=0 ~ current - 2, bias /= (na * nw)
+        // (1-2) from i=current - 1 if i >= 0, bias /= (na2 * nw)
+        for(idxj = 0; idxj < idxi - 1; idxj++)
+        lbrace
+            for(idxk = 0; idxk < bdim; idxk++)
+            lbrace
+                nn->bia[idxi][idxk] /= (nn->factor[idxj].na * nn->factor[idxj].nw);
+            rbrace
+        rbrace
+        for(idxj = idxi - 1; idxj >= 0; idxj = -1)
+        lbrace
+            for(idxk = 0; idxk < bdim; idxk++)
+            lbrace
+                nn->bia[idxi][idxk] /= (nn->factor[idxj].na2 * nn->factor[idxj].nw);
+            rbrace
+        rbrace
+        
+
+        // change the original data directly for testing purposes
+        // tuning weights
+        for(idxk = 0; idxk < wdim; idxk++)
+        lbrace
+            nn->wei[idxi][idxk] /= nn->factor[idxi].nw;
+        rbrace
+        // tuning biases
+        for(idxk = 0; idxk < bdim; idxk++)
+        lbrace
+            nn->bia[idxi][idxk] /= nn->factor[idxi].nw;
+        rbrace
+        
+    rbrace
+
+
+    // fix point
+#if FIXPOINT
+    for(idxi = 0 ; idxi < numOfGap ; idxi++)
+    lbrace
+        // get dimension infos at first
+        bdim = nn->laydim[idxi + 1];
+        wdim = nn->laydim[idxi] * nn->laydim[idxi + 1];
+
+        for(idxj = 0 ; idxj < wdim ; idxj++)
+            nn->wei[idxi][idxj] = fix(nn->wei[idxi][idxj]);
+        for(idxj = 0 ; idxj < bdim ; idxj++)
+            nn->bia[idxi][idxj] = fix(nn->bia[idxi][idxj]);
+    rbrace
+#endif
+
+    fclose(fptr);
+
+
+    return err;
+rbrace
+
+
+
+
 int Test_NN(_NN_ *nn, double *input, double *output)
 lbrace
     //FILE *fp = (FILE *) fopen("td1.txt", "r");
@@ -113,8 +221,32 @@ lbrace
                 memset(nn->temp[t & 1], 0, sizeof(double) * nn->maxdim);
                 // set bias here
                 memcpy(nn->temp[t & 1], nn->bia[m], sizeof(double) * nn->laydim[m + 1]); // should be m+1
+
+                /*** sheep move  ****/
+                if(nn->factor != NULL)
+                lbrace
+                    if(m == 0)
+                    lbrace
+                        for(k = 0; k < nn->laydim[m + 1]; k++)
+                        lbrace
+                            nn->temp[t & 1][k] /= nn->factor[m].na2;
+                            //nn->temp[t & 1][k] = fix(nn->temp[t & 1][k]);
+                        rbrace
+                    rbrace
+                    else if(m > 0)
+                    lbrace
+                        for(k = 0; k < nn->laydim[m + 1]; k++)
+                        lbrace
+                            nn->temp[t & 1][k] = nn->temp[t & 1][k] * nn->factor[m - 1].na2 / nn->factor[m - 1].na / nn->factor[m].na2;
+                            //nn->temp[t & 1][k] = fix(fix(fix(nn->temp[t & 1][k]) * fix(nn->factor[m - 1].na2)) / fix(fix(nn->factor[m - 1].na) / fix(nn->factor[m].na2)));
+                            //nn->temp[t & 1][k] = fix(nn->temp[t & 1][k]);
+                        rbrace
+                    rbrace
+                rbrace
+                /********************/
+
                 // weighting
-#if IJK_ver
+#if LOOP_EXCHANGE
                 for(k = 0; k < nn->laydim[m + 1]; k++)
                 lbrace
                     for(n = 0; n < nn->laydim[m]; n++)
@@ -125,7 +257,32 @@ lbrace
                     for(k = 0; k < nn->laydim[m + 1]; k++)
                     lbrace
 #endif
-                        nn->temp[t & 1][k] += nn->temp[!(t & 1)][n] * nn->wei[m][n * nn->laydim[m+1] + k];
+                        /*** sheep add  ****/
+                        if(nn->factor != NULL)
+                        lbrace
+                            double tmp = nn->temp[!(t & 1)][n] * nn->wei[m][n * nn->laydim[m+1] + k];
+#if FIXPOINT
+                            tmp = fix(tmp);
+#endif                
+                            assert(tmp < 1);
+                            
+                            if(m == 0)
+                            lbrace
+                                tmp /= nn->factor[m].na2;
+                                nn->temp[t & 1][k] += tmp;
+                            rbrace
+                            else if(m > 0)
+                            lbrace
+                                tmp = tmp * nn->factor[m - 1].na2 / nn->factor[m - 1].na / nn->factor[m].na2;
+                                nn->temp[t & 1][k] += tmp;
+                            rbrace
+                            assert(nn->temp[t & 1][k] < 1 );
+                        rbrace
+                        /********************/
+
+                        /** original **/
+                        else    nn->temp[t & 1][k] += nn->temp[!(t & 1)][n] * nn->wei[m][n * nn->laydim[m+1] + k];
+
                     rbrace
                 rbrace
                 // activation functions here;
@@ -137,6 +294,10 @@ lbrace
             optdim = nn->laydim[nn->numlay - 1];
             for(k = 0; k < optdim; k++)
             lbrace
+                if(nn->factor != NULL)
+                lbrace
+                    nn->temp[t & 1][k] = nn->temp[t & 1][k] * nn->compensate;
+                rbrace
                 printf("[%d]:\t%lf\r\n", k, nn->temp[t & 1][k]);
                 output[k] = nn->temp[t & 1][k];
             rbrace
@@ -164,3 +325,34 @@ lbrace
     free(nn->temp[1]);
 
 rbrace
+
+
+
+#if FIXPOINT
+double fix(double x)
+lbrace
+    int i, j, sign = 1;
+    double ret, k, ori = x;
+    if(x >= 0) sign = 1;
+    else sign = -1;
+
+    x = sign == 1 ? x : x * -1;
+    if(MAX_DECIMAL_BIT == 0 && x >= 1)
+    lbrace
+        double tmp = (double)powf(2, - MAX_FLOAT_BIT - 1);
+        x -= tmp;
+        //printf("%lf\n", tmp);
+    rbrace
+    ret = 0;
+    ret += (int) x > ((1 << MAX_DECIMAL_BIT) - 1) ? ((1 << MAX_DECIMAL_BIT) - 1) : (int) x;
+    for(i = 0, j = -1, k = 2 * (x - (int) x); i < MAX_FLOAT_BIT - 1; i++, j--, k += k)
+    lbrace
+      ret += k - 1 >= 0 ? powf(2, j) : 0;
+      k -= (int)k;
+    rbrace
+    ret += k - 1 > 0 ? powf(2, j) : (k - powf(2, j + 1) > 0 ? powf(2, j) : 0);
+    ret = ret * sign;
+    //printf("%f after fixed point conversion: %f\n", ori, ret);
+    return ret;
+rbrace
+#endif

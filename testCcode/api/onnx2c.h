@@ -6,6 +6,13 @@
 #define MAX_LAYER   16
 
 
+typedef struct _norm
+{
+    double nw;
+    double na;
+    double na2;
+} _norm;
+
 typedef struct _NN_
 {
     int numlay;
@@ -14,6 +21,9 @@ typedef struct _NN_
     double *wei[MAX_LAYER];
     double *bia[MAX_LAYER];
     double *temp[2]; // for calculating
+    double compensate;
+    struct _norm *factor;
+    
     /*
      * future add,
      * func ptr to act func
@@ -33,6 +43,8 @@ int Init_NN(_NN_ *nn);
 int GetNNInputSize(_NN_* nn);
 
 int GetNNOutputSize(_NN_* nn);
+
+int Norm_NN(_NN_ *nn);
 
 int Test_NN(_NN_ *nn, double *input, double *output);
 

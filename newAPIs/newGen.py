@@ -2,7 +2,7 @@ import onnx
 import numpy as np
 
 fdir = '../testExtract/input/'
-onnxfile = 'mnist256x256x256.onnx'
+onnxfile = 'mnist16x16x16.onnx'
 fpath = fdir + onnxfile
 model = onnx.load(fpath)
 
@@ -45,7 +45,7 @@ for idx, i in enumerate(inits):
     n_lay = int(idx / 2)
 
     name = str(i.name)
-    const_vars += 'const double coef_' + name.split('/')[0] + name.split('/')[1] + '[] = '
+    const_vars += 'double coef_' + name.split('/')[0] + name.split('/')[1] + '[] = '
     const_vars += str(list(i.double_data)).replace('[','{ ').replace(']',' }') + ';\n'
 
     if name.find('weights') >= 0:
@@ -77,5 +77,5 @@ for cline in ccode:
 
 # set max Layer to 784 for M4
 outputs = outputs.format(numOfLayer, numOfGap, const_vars, 784, '(int [])' + dimOfLayer, assgin_data).replace('lbrace', '{').replace('rbrace', '}')
-with open('ver0.0.1-' + onnxfile.split('.')[0] + '.c', 'w') as fp:
+with open('ver0.0.2-' + onnxfile.split('.')[0] + '.c', 'w') as fp:
     fp.write(outputs)
