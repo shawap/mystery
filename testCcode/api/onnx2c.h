@@ -50,6 +50,7 @@ int Test_NN(_NN_ *nn, double *input, double *output);
 
 void Free_NN(_NN_ *nn);
 
+double fix(double x);
 
 
 
